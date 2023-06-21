@@ -2,7 +2,7 @@
 
 -export([spawn/0, talkTo/2, orderTo/2, addFunctionTo/5]).
 -export([get/2, set/3, loop/4]).
--define(TIMEOUT, 60000).
+-define(TIMEOUT, 600000).
 
 spawn() -> spawn(chatAiActor, loop, [
   [], 
