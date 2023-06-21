@@ -2,6 +2,7 @@
 
 -export([spawn/0, talkTo/2, orderTo/2, addFunctionTo/5]).
 -export([get/2, set/3, loop/4]).
+-define(TIMEOUT, 60000).
 
 spawn() -> spawn(chatAiActor, loop, [
   [], 
@@ -15,7 +16,7 @@ talkTo(Pid, Content) ->
   receive
     {Pid, Reply} ->
       {ok, Reply}
-    after 60000 ->
+    after ?TIMEOUT ->
       {error, timeout}
   end.
 
@@ -24,7 +25,7 @@ orderTo(Pid, Content) ->
   receive
     {Pid, ok} ->
       {ok, system}
-    after 60000 ->
+    after ?TIMEOUT ->
       {error, timeout}
   end.
 
@@ -33,7 +34,7 @@ addFunctionTo(Pid, Name, Description, Parameters, Fun) ->
   receive
     {Pid, function, Res} ->
       Res
-    after 60000 ->
+    after ?TIMEOUT ->
       {error, timeout}
   end.
 
@@ -42,7 +43,7 @@ get(Pid, Key) ->
   receive
     {Pid, getter, Value} -> 
       maps:find(Key, Value)
-    after 60000 ->
+    after ?TIMEOUT ->
       {error, timeout}
   end.
 
@@ -51,7 +52,7 @@ set(Pid, Key, Value) ->
   receive
     {Pid, setter, Res} ->
       Res
-    after 60000 ->
+    after ?TIMEOUT ->
       {error, timeout}
   end.
 
@@ -133,7 +134,7 @@ openaiRequest(Messages, Model, Temperature, {FunData, Funs}) ->
     <<"functions">> => FunData
   }),
   ok = gun:data(ConnPid, StreamRef, fin, Json),
-  {response, nofin, 200, _headers} = gun:await(ConnPid, StreamRef),
+  {response, nofin, 200, _} = gun:await(ConnPid, StreamRef, ?TIMEOUT),
   {ok, Body} = gun:await_body(ConnPid, StreamRef),
   gun:close(ConnPid),
   {ok, [Choice]} = maps:find(<<"choices">>, jsone:decode(Body)),
