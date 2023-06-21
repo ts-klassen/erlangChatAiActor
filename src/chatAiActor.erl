@@ -134,7 +134,12 @@ openaiRequest(Messages, Model, Temperature, {FunData, Funs}) ->
     <<"functions">> => FunData
   }),
   ok = gun:data(ConnPid, StreamRef, fin, Json),
-  {response, nofin, 200, _} = gun:await(ConnPid, StreamRef, ?TIMEOUT),
+  ok = case gun:await(ConnPid, StreamRef, ?TIMEOUT) of
+    {response, nofin, 200, _Header} -> ok;
+    {response, nofin, _Status, _Header} ->
+      error = gun:await_body(ConnPid, StreamRef);
+    {response, _, _, _} -> error
+  end,
   {ok, Body} = gun:await_body(ConnPid, StreamRef),
   gun:close(ConnPid),
   {ok, [Choice]} = maps:find(<<"choices">>, jsone:decode(Body)),
@@ -158,8 +163,9 @@ openaiRequest(Messages, Model, Temperature, {FunData, Funs}) ->
         error -> OnErrorRes
       end,
       NextMessages = addMessage([Message|Messages], function, Name, Res),
+      timer:sleep(1000),
       openaiRequest(NextMessages, Model, Temperature, {FunData, Funs});
-    _content ->
+    _any ->
       {Content, [Message|Messages]}
   end.
 
